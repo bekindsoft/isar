@@ -27,7 +27,7 @@ jobs:
           - os: ubuntu-20.04
             artifact_name: libisar_linux_x64.so
             script: build_linux.sh x64
-          - os: ubuntu-20.04
+          - os: ubuntu-arm
             artifact_name: libisar_linux_arm64.so
             script: build_linux.sh arm
           - os: macos-latest
