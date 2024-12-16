@@ -13,11 +13,7 @@ dependencies:
   flutter:
     sdk: flutter
   isar: 
-    version: 0.0.0-placeholder
-    git:
-      url: https://github.com/bekindsoft/isar
-      ref: feat/release-arm
-      path: packages/isar_flutter_libs
+    version: any
 
 
 
