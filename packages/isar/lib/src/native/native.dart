@@ -18,9 +18,7 @@ FutureOr<IsarCoreBindings> initializePlatformBindings([String? library]) {
   try {
     library ??= Platform.isIOS ? null : library ?? Abi.current().localName;
 
-    final dylib = Platform.isIOS
-        ? DynamicLibrary.process()
-        : DynamicLibrary.open(library!);
+    final dylib = Platform.isIOS ? DynamicLibrary.process() : DynamicLibrary.open(library!);
     bindings = IsarCoreBindings(dylib);
   } catch (e) {
     throw IsarNotReadyError(
@@ -60,6 +58,7 @@ extension on Abi {
       case Abi.macosArm64:
       case Abi.macosX64:
         return 'libisar.dylib';
+      case Abi.linuxArm64:
       case Abi.linuxX64:
         return 'libisar.so';
       case Abi.windowsArm64:

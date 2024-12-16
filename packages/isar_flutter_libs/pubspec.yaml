@@ -13,8 +13,9 @@ dependencies:
   flutter:
     sdk: flutter
   isar: 
-    version: 0.0.0-placeholder
-    hosted: https://pub.isar-community.dev/
+    version: any
+
+
 
 flutter:
   plugin:
