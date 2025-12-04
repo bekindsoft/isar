@@ -15,7 +15,7 @@ dependencies:
   isar:
     git:
       url: https://github.com/bekindsoft/isar
-      ref: feat/release-arm
+      ref: feat/release-arm-builders
       path: packages/isar
 
 flutter:
