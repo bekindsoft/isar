@@ -99,7 +99,8 @@ extension on DartType {
       final fromJson = element.getNamedConstructor('fromJson');
       if (toJson != null && fromJson != null) {
         final toJsonReturnType = toJson.returnType;
-        final fromJsonParameterType = fromJson.parameters.firstOrNull?.type;
+        final fromJsonParameterType =
+            fromJson.formalParameters.firstOrNull?.type;
         if (toJsonReturnType.isDartCoreMap &&
             toJsonReturnType is ParameterizedType &&
             toJsonReturnType.typeArguments[0].isDartCoreString &&
