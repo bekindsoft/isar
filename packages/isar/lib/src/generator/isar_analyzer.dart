@@ -1,6 +1,4 @@
-// ignore_for_file: use_string_buffers
-
-part of isar_generator;
+part of 'isar_generator.dart';
 
 class _IsarAnalyzer {
   ObjectInfo analyzeCollection(Element element) {
@@ -20,9 +18,16 @@ class _IsarAnalyzer {
         );
       }
     } else if (idProperties.length == 1) {
-      idPropertyName = idProperties.single.name;
+      idPropertyName = idProperties.single.name ?? 'id';
     } else {
       _err('Two or more properties are annotated with @id.', modelClass);
+    }
+
+    final idPropertyElement = modelClass.allAccessors.firstWhere(
+      (e) => e.name == idPropertyName,
+    );
+    if (idPropertyElement is! FieldElement) {
+      _err('Id property must be a field.', modelClass);
     }
 
     final properties = <PropertyInfo>[];
@@ -51,7 +56,7 @@ class _IsarAnalyzer {
     }
 
     return ObjectInfo(
-      dartName: modelClass.name,
+      dartName: modelClass.name ?? '',
       isarName: modelClass.isarName,
       accessor: modelClass.collectionAccessor,
       properties: properties,
@@ -85,7 +90,7 @@ class _IsarAnalyzer {
     }
 
     return ObjectInfo(
-      dartName: modelClass.name,
+      dartName: modelClass.name ?? '',
       isarName: modelClass.isarName,
       properties: properties,
     );
@@ -102,16 +107,21 @@ class _IsarAnalyzer {
     }
 
     if (modelClass.isAbstract) {
-      _err('Class must not be abstract.', modelClass);
+      final hasFactory = modelClass.constructors.any((c) => c.isFactory);
+      if (!hasFactory) {
+        _err('Class must not be abstract.', modelClass);
+      }
     }
 
     if (!modelClass.isPublic) {
       _err('Class must be public.', modelClass);
     }
 
-    final constructor = modelClass.constructors
-        .where((c) => c.periodOffset == null)
-        .firstOrNull;
+    final constructor =
+        modelClass.constructors
+            .where((c) => !c.isFactory && !c.isConst && c.name == 'new')
+            .firstOrNull ??
+        modelClass.constructors.where((c) => c.name == 'new').firstOrNull;
     if (constructor == null) {
       _err('Class needs an unnamed constructor.', modelClass);
     }
@@ -142,9 +152,11 @@ class _IsarAnalyzer {
       );
     }
 
-    final unknownConstructorParameter = constructor.parameters
+    final unknownConstructorParameter = constructor.formalParameters
         .where(
-          (p) => p.isRequired && !properties.any((e) => e.dartName == p.name),
+          (p) =>
+              p.isRequired &&
+              !properties.any((e) => e.dartName == (p.name ?? '')),
         )
         .firstOrNull;
     if (unknownConstructorParameter != null) {
@@ -160,7 +172,7 @@ class _IsarAnalyzer {
       for (final property in element.allAccessors) {
         final type = property.type.scalarType.element;
         if (type is ClassElement && type.embeddedAnnotation != null) {
-          if (names.add(type.name)) {
+          if (names.add(type.name ?? '')) {
             fillNames(names, type);
           }
         }
@@ -172,157 +184,6 @@ class _IsarAnalyzer {
     return names;
   }
 
-  static const Set<String> reservedNames = {
-    // taken from https://sqlite.org/lang_keywords.html
-    "ABORT",
-    "ACTION",
-    "ADD",
-    "AFTER",
-    "ALL",
-    "ALTER",
-    "ALWAYS",
-    "ANALYZE",
-    "AND",
-    "AS",
-    "ASC",
-    "ATTACH",
-    "AUTOINCREMENT",
-    "BEFORE",
-    "BEGIN",
-    "BETWEEN",
-    "BY",
-    "CASCADE",
-    "CASE",
-    "CAST",
-    "CHECK",
-    "COLLATE",
-    "COLUMN",
-    "COMMIT",
-    "CONFLICT",
-    "CONSTRAINT",
-    "CREATE",
-    "CROSS",
-    "CURRENT",
-    "CURRENT_DATE",
-    "CURRENT_TIME",
-    "CURRENT_TIMESTAMP",
-    "DATABASE",
-    "DEFAULT",
-    "DEFERRABLE",
-    "DEFERRED",
-    "DELETE",
-    "DESC",
-    "DETACH",
-    "DISTINCT",
-    "DO",
-    "DROP",
-    "EACH",
-    "ELSE",
-    "END",
-    "ESCAPE",
-    "EXCEPT",
-    "EXCLUDE",
-    "EXCLUSIVE",
-    "EXISTS",
-    "EXPLAIN",
-    "FAIL",
-    "FILTER",
-    "FIRST",
-    "FOLLOWING",
-    "FOR",
-    "FOREIGN",
-    "FROM",
-    "FULL",
-    "GENERATED",
-    "GLOB",
-    "GROUP",
-    "GROUPS",
-    "HAVING",
-    "IF",
-    "IGNORE",
-    "IMMEDIATE",
-    "IN",
-    "INDEX",
-    "INDEXED",
-    "INITIALLY",
-    "INNER",
-    "INSERT",
-    "INSTEAD",
-    "INTERSECT",
-    "INTO",
-    "IS",
-    "ISNULL",
-    "JOIN",
-    "KEY",
-    "LAST",
-    "LEFT",
-    "LIKE",
-    "LIMIT",
-    "MATCH",
-    "MATERIALIZED",
-    "NATURAL",
-    "NO",
-    "NOT",
-    "NOTHING",
-    "NOTNULL",
-    "NULL",
-    "NULLS",
-    "OF",
-    "OFFSET",
-    "ON",
-    "OR",
-    "ORDER",
-    "OTHERS",
-    "OUTER",
-    "OVER",
-    "PARTITION",
-    "PLAN",
-    "PRAGMA",
-    "PRECEDING",
-    "PRIMARY",
-    "QUERY",
-    "RAISE",
-    "RANGE",
-    "RECURSIVE",
-    "REFERENCES",
-    "REGEXP",
-    "REINDEX",
-    "RELEASE",
-    "RENAME",
-    "REPLACE",
-    "RESTRICT",
-    "RETURNING",
-    "RIGHT",
-    "ROLLBACK",
-    "ROW",
-    "ROWS",
-    "SAVEPOINT",
-    "SELECT",
-    "SET",
-    "TABLE",
-    "TEMP",
-    "TEMPORARY",
-    "THEN",
-    "TIES",
-    "TO",
-    "TRANSACTION",
-    "TRIGGER",
-    "UNBOUNDED",
-    "UNION",
-    "UNIQUE",
-    "UPDATE",
-    "USING",
-    "VACUUM",
-    "VALUES",
-    "VIEW",
-    "VIRTUAL",
-    "WHEN",
-    "WHERE",
-    "WINDOW",
-    "WITH",
-    "WITHOUT"
-  };
-
   PropertyInfo _analyzePropertyInfo(
     PropertyInducingElement property,
     ConstructorElement constructor,
@@ -333,17 +194,12 @@ class _IsarAnalyzer {
     Map<String, dynamic>? enumMap;
     String? enumPropertyName;
 
-    if (reservedNames.contains(property.name.toUpperCase())) {
-      _err(
-          "${property.name.toUpperCase()} is a reserved keyword and may not be used as property name",
-          property);
-    }
-
     late final IsarType type;
     if (dartType.scalarType.element is EnumElement) {
       final enumClass = dartType.scalarType.element! as EnumElement;
-      final enumElements =
-          enumClass.fields.where((f) => f.isEnumConstant).toList();
+      final enumElements = enumClass.fields
+          .where((f) => f.isEnumConstant)
+          .toList();
 
       final enumProperty = enumClass.enumValueProperty;
       enumPropertyName = enumProperty?.name ?? 'index';
@@ -352,8 +208,9 @@ class _IsarAnalyzer {
         _err('Only fields are supported for enum properties', enumProperty);
       }
 
-      final enumIsarType =
-          enumProperty == null ? IsarType.byte : enumProperty.type.propertyType;
+      final enumIsarType = enumProperty == null
+          ? IsarType.byte
+          : enumProperty.type.propertyType;
       if (enumIsarType != IsarType.byte &&
           enumIsarType != IsarType.int &&
           enumIsarType != IsarType.long &&
@@ -367,12 +224,14 @@ class _IsarAnalyzer {
         final element = enumElements[i];
         dynamic propertyValue = i;
         if (enumProperty != null) {
-          final property =
-              element.computeConstantValue()!.getField(enumProperty.name)!;
-          propertyValue = property.toBoolValue() ??
-              property.toIntValue() ??
-              property.toDoubleValue() ??
-              property.toStringValue();
+          final property = element.computeConstantValue()!.getField(
+            enumProperty.name ?? '',
+          );
+          propertyValue =
+              property?.toBoolValue() ??
+              property?.toIntValue() ??
+              property?.toDoubleValue() ??
+              property?.toStringValue();
         }
 
         if (propertyValue == null) {
@@ -383,12 +242,9 @@ class _IsarAnalyzer {
         }
 
         if (enumMap.values.contains(propertyValue)) {
-          _err(
-            'Enum property has duplicate values.',
-            enumProperty,
-          );
+          _err('Enum property has duplicate values.', enumProperty);
         }
-        enumMap[element.name] = propertyValue;
+        enumMap[element.name ?? ''] = propertyValue;
       }
     } else {
       if (dartType.propertyType != null) {
@@ -405,11 +261,12 @@ class _IsarAnalyzer {
       }
     }
 
-    final nullable = dartType.nullabilitySuffix != NullabilitySuffix.none ||
+    final nullable =
+        dartType.nullabilitySuffix != NullabilitySuffix.none ||
         dartType is DynamicType;
     final elementNullable = type.isList
         ? dartType.scalarType.nullabilitySuffix != NullabilitySuffix.none ||
-            dartType.scalarType is DynamicType
+              dartType.scalarType is DynamicType
         : null;
     if (isId) {
       if (type != IsarType.long && type != IsarType.string) {
@@ -424,8 +281,8 @@ class _IsarAnalyzer {
       _err('Bytes must not be nullable.', property);
     }
 
-    final constructorParameter = constructor.parameters
-        .where((p) => p.name == property.name)
+    final constructorParameter = constructor.formalParameters
+        .where((p) => (p.name ?? '') == property.name)
         .firstOrNull;
     int? constructorPosition;
     late DeserializeMode mode;
@@ -439,8 +296,9 @@ class _IsarAnalyzer {
       mode = constructorParameter.isNamed
           ? DeserializeMode.namedParam
           : DeserializeMode.positionalParam;
-      constructorPosition =
-          constructor.parameters.indexOf(constructorParameter);
+      constructorPosition = constructor.formalParameters.indexOf(
+        constructorParameter,
+      );
     } else {
       mode = property.setter == null
           ? DeserializeMode.none
@@ -449,13 +307,14 @@ class _IsarAnalyzer {
 
     return PropertyInfo(
       index: propertyIndex,
-      dartName: property.name,
+      dartName: property.name ?? '',
       isarName: property.isarName,
       typeClassName: type == IsarType.json
           ? dartType.element!.name!
           : dartType.scalarType.element!.name!,
-      targetIsarName:
-          type.isObject ? dartType.scalarType.element!.isarName : null,
+      targetIsarName: type.isObject
+          ? dartType.scalarType.element!.isarName
+          : null,
       type: type,
       isId: isId,
       enumMap: enumMap,
@@ -464,8 +323,9 @@ class _IsarAnalyzer {
       elementNullable: elementNullable,
       defaultValue:
           constructorParameter?.defaultValueCode ?? _defaultValue(dartType),
-      elementDefaultValue:
-          type.isList ? _defaultValue(dartType.scalarType) : null,
+      elementDefaultValue: type.isList
+          ? _defaultValue(dartType.scalarType)
+          : null,
       utc: type.isDate && property.hasUtcAnnotation,
       mode: mode,
       assignable: property.setter != null,
@@ -498,14 +358,14 @@ class _IsarAnalyzer {
     } else if (type.isDartCoreMap) {
       return 'const <String, dynamic>{}';
     } else {
-      final element = type.element!;
+      final element = type.element;
       if (element is EnumElement) {
         final firstConst = element.fields.where((f) => f.isEnumConstant).first;
         return '${element.name}.${firstConst.name}';
       } else if (element is ClassElement) {
         final defaultConstructor = _checkValidClass(element);
         var code = '${element.name}(';
-        for (final param in defaultConstructor.parameters) {
+        for (final param in defaultConstructor.formalParameters) {
           if (!param.isOptional) {
             if (param.isNamed) {
               code += '${param.name}: ';
@@ -536,8 +396,9 @@ class _IsarAnalyzer {
 
       for (var i = 0; i < indexProperties.length; i++) {
         final propertyName = indexProperties[i];
-        final property =
-            properties.where((it) => it.isarName == propertyName).firstOrNull;
+        final property = properties
+            .where((it) => it.isarName == propertyName)
+            .firstOrNull;
         if (property == null) {
           _err('Property does not exist: "$propertyName".', element);
         } else if (property.isId) {
