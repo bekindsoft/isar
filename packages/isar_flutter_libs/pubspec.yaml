@@ -12,10 +12,11 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  isar: 
-    version: any
-
-
+  isar:
+    git:
+      url: https://github.com/bekindsoft/isar
+      ref: release/4.0.x
+      path: packages/isar
 
 flutter:
   plugin:
