@@ -11,22 +11,15 @@ let package = Package(
         .library(name: "isar-flutter-libs", targets: ["isar_flutter_libs"])
     ],
     targets: [
+        // A dynamic framework, so Xcode embeds it in the app and its exported
+        // symbols survive release builds for Dart to look up.
         .binaryTarget(
             name: "IsarCore",
             path: "IsarCore.xcframework"
         ),
         .target(
-            name: "CIsarCore",
-            dependencies: ["IsarCore"],
-            path: "Core",
-            linkerSettings: [
-                .linkedFramework("CoreFoundation"),
-                .linkedFramework("Security"),
-            ]
-        ),
-        .target(
             name: "isar_flutter_libs",
-            dependencies: ["CIsarCore"],
+            dependencies: ["IsarCore"],
             path: "Plugin",
             resources: [
                 .process("PrivacyInfo.xcprivacy")

@@ -16,21 +16,7 @@ export 'ffi.dart';
 FutureOr<IsarCoreBindings> initializePlatformBindings([String? library]) {
   late IsarCoreBindings bindings;
   try {
-    library ??= Platform.isIOS ? null : library ?? Abi.current().localName;
-
-    DynamicLibrary dylib;
-    if (Platform.isIOS) {
-      dylib = DynamicLibrary.process();
-    } else {
-      try {
-        dylib = DynamicLibrary.open(library!);
-      } catch (_) {
-        // Flutter macOS apps link Isar Core statically via isar_flutter_libs.
-        if (!Platform.isMacOS) rethrow;
-        dylib = DynamicLibrary.process();
-      }
-    }
-    bindings = IsarCoreBindings(dylib);
+    bindings = IsarCoreBindings(_openIsarCore(library));
   } catch (e) {
     throw IsarNotReadyError(
       'Could not initialize IsarCore library for processor architecture '
@@ -54,6 +40,33 @@ FutureOr<IsarCoreBindings> initializePlatformBindings([String? library]) {
   bindings.isar_connect_dart_api(NativeApi.initializeApiDLData);
 
   return bindings;
+}
+
+DynamicLibrary _openIsarCore(String? library) {
+  if (library != null) {
+    return DynamicLibrary.open(library);
+  }
+
+  if (Platform.isIOS || Platform.isMacOS) {
+    // Flutter apps embed IsarCore.framework through isar_flutter_libs:
+    // Runner.app/Frameworks on iOS, Runner.app/Contents/Frameworks on macOS.
+    final executableDir = File(Platform.resolvedExecutable).parent;
+    final frameworksDir = Platform.isIOS ? executableDir : executableDir.parent;
+    try {
+      return DynamicLibrary.open(
+        '${frameworksDir.path}/Frameworks/IsarCore.framework/IsarCore',
+      );
+      // DynamicLibrary.open reports a missing library as an ArgumentError.
+      // ignore: avoid_catching_errors
+    } on ArgumentError {
+      if (Platform.isIOS) {
+        return DynamicLibrary.process();
+      }
+      // Dart-only apps and tests on macOS use libisar.dylib.
+    }
+  }
+
+  return DynamicLibrary.open(Abi.current().localName);
 }
 
 /// @nodoc

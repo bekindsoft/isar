@@ -7,8 +7,7 @@ Pod::Spec.new do |s|
   s.author           = { 'Isar' => 'hello@isar.dev' }
 
   s.source           = { :path => '.' }
-  s.source_files     = 'isar_flutter_libs/Plugin/**/*.swift', 'isar_flutter_libs/Core/**/*.{h,c}'
-  s.public_header_files = 'isar_flutter_libs/Core/include/**/*.h'
+  s.source_files     = 'isar_flutter_libs/Plugin/**/*.swift'
 
   s.ios.dependency 'Flutter'
   s.osx.dependency 'FlutterMacOS'
@@ -16,6 +15,5 @@ Pod::Spec.new do |s|
   s.osx.deployment_target = '10.14'
   s.swift_version = '5.3'
   s.vendored_frameworks = 'isar_flutter_libs/IsarCore.xcframework'
-  s.frameworks = 'CoreFoundation', 'Security'
   s.resource_bundles = {'isar_flutter_libs_apple_privacy' => ['isar_flutter_libs/Plugin/PrivacyInfo.xcprivacy']}
 end
