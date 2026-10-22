@@ -1,6 +1,7 @@
 use bindgen::callbacks::{IntKind, ParseCallbacks};
+use std::path::{Path, PathBuf};
 use std::process::Command;
-use std::{env, fs, path::PathBuf};
+use std::{env, fs};
 
 #[derive(Debug)]
 struct Callbacks;
@@ -52,6 +53,54 @@ impl ParseCallbacks for Callbacks {
 const LIBMDBX_REPO: &str = "https://github.com/isar/libmdbx.git";
 const LIBMDBX_TAG: &str = "v0.12.9";
 
+fn git(dir: &Path, args: &[&str]) -> Option<String> {
+    let output = Command::new("git")
+        .args(args)
+        .current_dir(dir)
+        .output()
+        .ok()?;
+    if !output.status.success() {
+        return None;
+    }
+    Some(String::from_utf8_lossy(&output.stdout).trim().to_string())
+}
+
+// The sources get patched in place below, so an existing checkout is reset
+// instead of cloned again. Only the first build needs the network.
+fn checkout_libmdbx(mdbx_root: &Path) {
+    // Without this check, git would run against the parent isar repository.
+    if mdbx_root.join(".git").exists() {
+        let head = git(mdbx_root, &["rev-parse", "HEAD"]);
+        let tag = git(
+            mdbx_root,
+            &["rev-parse", &format!("{LIBMDBX_TAG}^{{commit}}")],
+        );
+        if head.is_some()
+            && head == tag
+            && git(mdbx_root, &["checkout", "--", "."]).is_some()
+            && git(mdbx_root, &["clean", "-fdx"]).is_some()
+        {
+            return;
+        }
+    }
+
+    let _ = fs::remove_dir_all(mdbx_root);
+    let output = Command::new("git")
+        .arg("clone")
+        .arg(LIBMDBX_REPO)
+        .arg("--branch")
+        .arg(LIBMDBX_TAG)
+        .arg(mdbx_root)
+        .output()
+        .expect("Failed to run git");
+    if !output.status.success() {
+        panic!(
+            "Failed to clone libmdbx {LIBMDBX_TAG}: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+}
+
 fn main() {
     println!("cargo:rerun-if-changed=build.rs");
     env::set_var("IPHONEOS_DEPLOYMENT_TARGET", "12.0");
@@ -59,15 +108,8 @@ fn main() {
 
     let is_android = env::var("CARGO_CFG_TARGET_OS").unwrap() == "android";
 
-    let _ = fs::remove_dir_all("libmdbx");
-
-    Command::new("git")
-        .arg("clone")
-        .arg(LIBMDBX_REPO)
-        .arg("--branch")
-        .arg(LIBMDBX_TAG)
-        .output()
-        .unwrap();
+    let mdbx_root = PathBuf::from(&env::var("CARGO_MANIFEST_DIR").unwrap()).join("libmdbx");
+    checkout_libmdbx(&mdbx_root);
 
     Command::new("make")
         .arg("release-assets")

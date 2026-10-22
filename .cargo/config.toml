@@ -1,0 +1,3 @@
+[net]
+# Cargo's built-in git client can hang while fetching git dependencies.
+git-fetch-with-cli = true
