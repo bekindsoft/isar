@@ -26,8 +26,10 @@ flutter:
         pluginClass: IsarFlutterLibsPlugin
       ios:
         pluginClass: IsarFlutterLibsPlugin
+        sharedDarwinSource: true
       macos:
         pluginClass: IsarFlutterLibsPlugin
+        sharedDarwinSource: true
       linux:
         pluginClass: IsarFlutterLibsPlugin
       windows:

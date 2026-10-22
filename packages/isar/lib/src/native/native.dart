@@ -18,7 +18,18 @@ FutureOr<IsarCoreBindings> initializePlatformBindings([String? library]) {
   try {
     library ??= Platform.isIOS ? null : library ?? Abi.current().localName;
 
-    final dylib = Platform.isIOS ? DynamicLibrary.process() : DynamicLibrary.open(library!);
+    DynamicLibrary dylib;
+    if (Platform.isIOS) {
+      dylib = DynamicLibrary.process();
+    } else {
+      try {
+        dylib = DynamicLibrary.open(library!);
+      } catch (_) {
+        // Flutter macOS apps link Isar Core statically via isar_flutter_libs.
+        if (!Platform.isMacOS) rethrow;
+        dylib = DynamicLibrary.process();
+      }
+    }
     bindings = IsarCoreBindings(dylib);
   } catch (e) {
     throw IsarNotReadyError(
